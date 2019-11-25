@@ -1,0 +1,37 @@
+---
+- name: install the httpd package on ansible2.example.com
+  hosts: 
+    - ansible2.example.com
+  vars:
+    apache_service: httpd
+    apache_pkg: httpd
+    apache_service_state: started
+    apache_service_enabled: yes
+    apache_document_root: /var/www/html/
+  tasks:
+    - name: Ensure {{ apache_service }} is installed
+      package:
+        name: "{{ apache_pkg }}"
+        state: present
+    - name: Ensure that the firewall is opened to allow access to it
+      firewalld:
+        immediate: true
+        state: enabled
+        permanent: yes
+        service: http
+    - name: create {{ apache_document_root }} folder
+      file:
+        path: "{{ apache_document_root }}"
+        state: directory
+        recurse: yes
+        mode: '0755'
+    - name: create index.html with some welcome text
+      copy:
+        content: 'Welcome to {{ inventory_hostname }}'
+        dest: "{{ apache_document_root }}/index.html"
+    - name: Ensure {{ apache_service }} is enabled and started
+      service:
+        name: "{{ apache_service  }}"
+        state: "{{ apache_service_state }}"
+        enabled: "{{ apache_service_enabled }}"
+  

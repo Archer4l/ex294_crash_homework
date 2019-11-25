@@ -1,0 +1,32 @@
+---
+- name: install the httpd package on ansible2.example.com
+  hosts: 
+    - ansible2.example.com
+  vars:
+    apache_service: httpd
+    apache_pkg: httpd
+    apache_service_state: stopped
+    apache_service_enabled: no
+    apache_document_root: /var/www/html/
+  tasks:
+    - name: Ensure {{ apache_service }} is disabled and stopped
+      service:
+        name: "{{ apache_service  }}"
+        state: "{{ apache_service_state }}"
+        enabled: "{{ apache_service_enabled }}"
+    - name: Ensure {{ apache_service }} is uninstalled
+      package:
+        name: "{{ apache_pkg }}"
+        state: absent
+    - name: Remove firewall rules
+      firewalld:
+        immediate: true
+        state: disabled
+        permanent: yes
+        service: http
+    - name: remove {{ apache_document_root }} folder
+      file:
+        path: "{{ apache_document_root }}"
+        state: absent
+  
+  
