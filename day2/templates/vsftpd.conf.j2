@@ -1,0 +1,17 @@
+{{ ansible_managed | comment }}
+anonymous_enable={{ anonymous_enable }}
+local_enable={{ local_enable  }}
+write_enable={{ write_enable }}
+anon_upload_enable={{ anon_upload_enable }}
+dirmessage_enable=yes
+xferlog_enable=yes
+pam_service_name=vsftpd
+connect_from_port_20=yes
+userlist_enable=yes
+pasv_min_port=5000
+pasv_max_port=5100
+
+
+anon_mkdir_write_enable=YES
+anon_other_write_enable=YES
+anon_world_readable_only=YES

@@ -1,0 +1,105 @@
+---
+- name: install and configure  vsftpd
+  vars:
+    anonymous_enable: 'yes'
+    local_enable: 'yes'
+    write_enable: 'yes'
+    anon_upload_enable: 'yes'
+    vsftpd_pub_path: '/var/ftp/pub'
+  hosts:
+    - ansible2.example.com
+  tasks:
+    - name: Ensure vsftpd is installed
+      package: 
+        name: vsftpd
+        state: present
+      notify: restart vsftpd
+    - name: Open firewall for ftp service
+      firewalld:
+        service: ftp
+        permanent: yes
+        state: enabled
+        immediate: yes
+    - name: deb
+      firewalld:
+        port: 5000-5100/tcp
+        state: enabled
+        immediate: yes
+        permanent: yes
+    # Deoploy vsftpd.conf with modification and create backup
+    - name: Deploy vsftpd config
+      template:
+        src: vsftpd.conf.j2
+        dest: /etc/vsftpd/vsftpd.conf
+        backup: yes
+        mode: 0640
+      notify: restart vsftpd
+    # configure vsftpd permissions and selinux
+    - name: Crate pub folder with full permissions
+      file:
+        path: '{{ vsftpd_pub_path }}'
+        mode: '0777'
+        recurse: yes
+        state: directory
+    # configure SELinux
+    - name: install required selinux utils
+      package:
+        name: policycoreutils-python-utils
+        state: present
+    - name: manage selinux settings
+      sefcontext:
+        target: '{{ vsftpd_pub_path }}'
+        setype: public_content_rw_t
+        state: present
+      notify:
+        - run manual restorecon
+    # configure SELinux boolean ftpd_anon_write 
+    - name: set selinux bool - allow ftpd_anon_write
+      seboolean:
+        name: ftpd_anon_write
+        state: yes
+        persistent: yes
+  handlers:
+    - name: restart vsftpd
+      service:
+        name: vsftpd
+        state: restarted
+        enabled: true
+    - name: run manual restorecon
+      command: "restorecon -vR {{ vsftpd_pub_path }}"
+
+
+# It is boring...
+#- name: Verify connectivity, uploading the /etc/hosts file from localhost
+#  hosts: localhost
+#  tasks:
+#    - name: install lftp
+#      package:
+#        name: lftp
+#        state: present
+#    - name: uploading the /etc/hosts file from localhost
+#      shell: |
+#        lftp ansible2.example.com << EOF
+#        cd pub
+#        put /etc/hosts
+#        EOF
+    
+
+- name: Verify connectivity, uploading the /etc/hosts file from localhost
+  hosts: ansible2.example.com
+  tasks:
+    - name: install lftp
+      local_action:
+        module: package
+        name: lftp
+        state: present
+    - name: uploading the /etc/hosts file from localhost
+      local_action: 
+        module: shell
+        cmd: |
+          lftp ansible2.example.com << EOF
+          cd pub
+          put /etc/hosts
+          EOF
+
+...
